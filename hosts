@@ -1,0 +1,3 @@
+[dvwa]
+10.0.0.116 ansible_python_interpreter=/usr/bin/python3
+

@@ -1,0 +1,12 @@
+---
+- name: Install DVWA
+  hosts: dvwa
+  remote_user: ansible
+  become: true
+  become_method: sudo
+
+  roles:
+    - common
+    - web
+    - db
+    - php
