@@ -1,27 +1,42 @@
 ---
 - name: Deletes anonymous MySQL server user for localhost
-  mysql_user: user="" state=absent login_password={{ mysql_root_password }} login_user=root
+  mysql_user:
+    user: ""
+    state: absent
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
 
-- name: Secures the MySQL root user
-  mysql_user: user="root" password="{{ mysql_root_password }}" host="{{ item }}" login_password="{{mysql_root_password}}" login_user=root
 
-  with_items:
-    - 127.0.0.1
-    - localhost
-    - ::1
-    - "{{ ansible_fqdn }}"
+- name: update mysql root password for all root accounts
+  mysql_user:
+    user: root
+    host: "{{ host }}"
+    password: "{{ mysql_root_password }}"
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    priv: "*.*:ALL,GRANT"
 
 - name: Removes the MySQL test database
-  mysql_db: db=test state=absent login_password="{{ mysql_root_password }}" login_user=root
+  mysql_db:
+    db: test
+    state: absent
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
 
-- name: creating new user
-  mysql_user: user=dvwa state=present password="{{ mysql_dvwa_password }}" host="{{ item }}" priv=*.*:ALL login_password="{{ mysql_root_password }}" login_user=root
+- name: creating dvwa DB user
+  mysql_user:
+    user: "{{ dvwa_db_username }}"
+    state: present
+    password: "{{ mysql_dvwa_password }}"
+    host: localhost
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    check_implicit_admin: yes
+    priv: "*.*:ALL,GRANT"
 
-  with_items:
-    - 127.0.0.1
-    - localhost
-    - ::1
-    - "{{ ansible_fqdn }}"
-
-- name: create new database
-  mysql_db: db=dvwa state=present login_password="{{ mysql_dvwa_password }}" login_user=dvwa
+- name: create DVWA database
+  mysql_db:
+    db: dvwa
+    state: present
+    login_user: "{{ dvwa_db_username }}"
+    login_password: "{{ mysql_dvwa_password }}"
