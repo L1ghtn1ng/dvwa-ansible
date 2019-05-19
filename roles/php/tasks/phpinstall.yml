@@ -1,5 +1,5 @@
 ---
-- name: Install PHP5.6 
+- name: Install PHP5.6
   apt:
     update_cache: yes
     name: "{{ packages }}"
@@ -13,6 +13,6 @@
       - php5.6-curl
       - php5.6-mysql
       - php5.6-gd
-    
+
   notify:
     - restart apache

@@ -1,15 +1,23 @@
 ---
 - name: config change for dvwa and replace new config
-  action: template src=templates/config.inc.php.j2 dest=/var/www/html/DVWA/config/config.inc.php
+  template:
+    src: templates/config.inc.php.j2
+    dest: /var/www/html/DVWA/config/config.inc.php
 
 - name: php configuration change
-  action: template src=templates/php.ini.j2 dest=/etc/php/5.6/apache2/php.ini
+  template:
+    src: templates/php.ini.j2
+    dest: /etc/php/5.6/apache2/php.ini
 
 - name: htacces configuration change
-  action: template src=templates/.htaccess.j2 dest=/var/www/html/DVWA/.htaccess
+  template:
+    src: templates/.htaccess.j2
+    dest: /var/www/html/DVWA/.htaccess
 
 - name: virtualhost configuration change
-  action: template src=templates/000-default.conf.j2 dest=/etc/apache2/sites-available/000-default.conf
-  
+  template:
+    src: templates/000-default.conf.j2
+    dest: /etc/apache2/sites-available/000-default.conf
+
   notify:
     - restart apache

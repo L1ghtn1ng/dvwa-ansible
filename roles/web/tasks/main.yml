@@ -1,10 +1,12 @@
 ---
-- name: Download DVWA from github via git clone
-  git: 
+- name: Download DVWA from github via git clone of the master branch
+  git:
     repo: https://github.com/ethicalhack3r/DVWA.git
     dest: /var/www/html/DVWA
+    clone: yes
     update: yes
-    force: yes
+    force: no
+    version: master
 
 - name: folder and file permissions for upload
   file: path="/var/www/html/DVWA/hackable/uploads" mode=0777 recurse=yes
@@ -12,5 +14,5 @@
 - name: php ids file permissions
   file: path="/var/www/html/DVWA/external/phpids/0.6/lib/IDS/tmp" mode=0777 recurse=yes
 
-- name: Config directory  permissions
+- name: Config directory permissions
   file: path="/var/www/html/DVWA/config" mode=0777 recurse=yes
