@@ -1,6 +1,9 @@
-# dvwa-ansible
-Easy way to install DVWA on Ubuntu 19.04 using ansible
+# DVWA-Ansible
+Easy way to install DVWA on Ubuntu 19.04 using Ansible.
 For more information on this app please see the upstream repo https://github.com/ethicalhack3r/DVWA
+
+# What does this playbook do?
+It installs a LAMP stack(apache,mysql and php) and configures them to get a working system to run DVWA
 
 # Credit
 Credit goes to https://github.com/appsecco/vulnerable-apps which this playbook is based on.
