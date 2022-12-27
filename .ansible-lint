@@ -1,0 +1,13 @@
+skip_list:
+  - experimental  # all rules tagged as experimental
+  - name[missing]  # Rule for checking task and play names.
+
+warn_list:  # or 'skip_list' to silence them completely
+  - deprecated-module  # Deprecated module.
+  - experimental  # all rules tagged as experimental
+  - fqcn[action-core]  # Use FQCN for builtin actions.
+  - name[casing]
+  - yaml[indentation]  # Violations reported by yamllint.
+  - yaml[new-line-at-end-of-file]  # Violations reported by yamllint.
+  - yaml[truthy]  # Violations reported by yamllint.
+  - parser-error  # AnsibleParserError.

@@ -1,20 +1,9 @@
 ---
-
-- name: Adding repo ppa:ondrej/apache2
-  apt_repository:
-    repo: 'ppa:ondrej/apache2'
-
-- name: Adding repo ppa:ondrej/php
-  apt_repository:
-    repo: 'ppa:ondrej/php'
-
 - name: Installing webserver(apache) & git
-  apt:
-    update_cache: yes
-    name: "{{ packages }}"
+  ansible.builtin.apt:
+    update_cache: true
+    name: "{{ item }}"
     state: present
-
-  vars:
-    packages:
+  loop:
     - apache2
     - git

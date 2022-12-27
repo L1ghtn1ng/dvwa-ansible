@@ -1,23 +1,17 @@
 ---
-- name: config change for dvwa and replace new config
-  template:
+- name: Config change for dvwa and replace new config
+  ansible.builtin.template:
     src: templates/config.inc.php.j2
     dest: /var/www/html/DVWA/config/config.inc.php
 
-- name: php configuration change
-  template:
+- name: PHP configuration change
+  ansible.builtin.template:
     src: templates/php.ini.j2
-    dest: /etc/php/5.6/apache2/php.ini
+    dest: /etc/php/8.1/apache2/php.ini
 
-- name: htacces configuration change
-  template:
-    src: templates/.htaccess.j2
-    dest: /var/www/html/DVWA/.htaccess
-
-- name: virtualhost configuration change
-  template:
+- name: Virtualhost configuration change
+  ansible.builtin.template:
     src: templates/000-default.conf.j2
     dest: /etc/apache2/sites-available/000-default.conf
-
   notify:
-    - restart apache
+    - Restart apache

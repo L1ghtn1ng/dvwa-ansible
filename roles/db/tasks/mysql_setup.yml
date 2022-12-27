@@ -1,26 +1,24 @@
 ---
-- name: set mysql root password
-  debconf:
+- name: Set mysql root password
+  ansible.builtin.debconf:
     name: mysql-server
     question: mysql-server/root_password
-    answer: "{{ mysql_root_password | quote }}"
+    answer: '{{ mysql_root_password | quote }}'
     vtype: password
 
 - name: Confirm mysql root password
-  debconf:
+  ansible.builtin.debconf:
     name: mysql-server
     question: mysql-server/root_password_again
-    answer: "{{ mysql_root_password | quote }}"
+    answer: '{{ mysql_root_password | quote }}'
     vtype: password
 
-- name: Install mysql packages
-  apt:
-    update_cache: yes
-    name: "{{ packages }}"
+- name: Install DB packages
+  ansible.builtin.apt:
+    update_cache: true
+    name: '{{ item }}'
     state: present
-
-  vars:
-    packages:
-     - mysql-server
-     - mysql-client
-     - python3-mysqldb
+  loop:
+    - mariadb-server
+    - mariadb-client
+    - python3-mysqldb

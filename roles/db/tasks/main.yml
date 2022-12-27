@@ -1,4 +1,4 @@
 ---
 
-- include: mysql_setup.yml
-- include: mysql_security.yml
+- ansible.builtin.include_tasks: mysql_setup.yml
+- ansible.builtin.include_tasks: mysql_security.yml
