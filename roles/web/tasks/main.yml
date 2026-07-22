@@ -131,8 +131,7 @@
     login_unix_socket: /run/mysqld/mysqld.sock
     name: "{{ dvwa_db_user }}"
     password: "{{ dvwa_db_password }}"
-    priv:
-      "{{ dvwa_db_name }}.*": ALL
+    priv: "{{ dvwa_db_name }}.*:ALL"
     state: present
   no_log: true
   when:
