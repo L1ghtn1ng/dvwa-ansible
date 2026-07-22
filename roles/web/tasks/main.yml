@@ -15,7 +15,6 @@
     owner: www-data
     group: www-data
     mode: "0755"
-    recurse: true
 
 - name: Protect the DVWA configuration directory
   ansible.builtin.file:
