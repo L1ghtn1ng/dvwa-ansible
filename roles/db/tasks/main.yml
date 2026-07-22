@@ -1,4 +1,6 @@
 ---
+- name: Install and start MariaDB
+  ansible.builtin.import_tasks: mysql_setup.yml
 
-- ansible.builtin.include_tasks: mysql_setup.yml
-- ansible.builtin.include_tasks: mysql_security.yml
+- name: Configure the DVWA database
+  ansible.builtin.import_tasks: mysql_security.yml

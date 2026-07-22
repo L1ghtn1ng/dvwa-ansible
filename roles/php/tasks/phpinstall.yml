@@ -1,13 +1,11 @@
 ---
-- name: Install PHP
+- name: Install PHP packages
   ansible.builtin.apt:
-    update_cache: true
-    name: '{{ item }}'
+    name:
+      - libapache2-mod-php
+      - php
+      - php-gd
+      - php-mysqli
     state: present
-  loop:
-    - php
-    - libapache2-mod-php
-    - php-mysqli
-    - php-gd
   notify:
-    - Restart apache
+    - Restart Apache

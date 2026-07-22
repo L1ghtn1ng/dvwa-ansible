@@ -1,24 +1,14 @@
 ---
-- name: Set mysql root password
-  ansible.builtin.debconf:
-    name: mysql-server
-    question: mysql-server/root_password
-    answer: '{{ mysql_root_password | quote }}'
-    vtype: password
-
-- name: Confirm mysql root password
-  ansible.builtin.debconf:
-    name: mysql-server
-    question: mysql-server/root_password_again
-    answer: '{{ mysql_root_password | quote }}'
-    vtype: password
-
-- name: Install DB packages
+- name: Install MariaDB packages
   ansible.builtin.apt:
-    update_cache: true
-    name: '{{ item }}'
+    name:
+      - mariadb-client
+      - mariadb-server
+      - python3-pymysql
     state: present
-  loop:
-    - mariadb-server
-    - mariadb-client
-    - python3-mysqldb
+
+- name: Enable and start MariaDB
+  ansible.builtin.service:
+    enabled: true
+    name: mariadb
+    state: started

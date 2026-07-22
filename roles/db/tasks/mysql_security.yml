@@ -1,41 +1,36 @@
 ---
-- name: Deletes anonymous MySQL server user for localhost
-  community.mysql.mysql_user:
-    user: ""
+- name: Remove anonymous MariaDB users
+  ansible.mysql.mysql_user:
+    config_file: ""
+    host_all: true
+    login_unix_socket: /run/mysqld/mysqld.sock
+    name: ""
     state: absent
-    login_user: root
-    login_password: "{{ mysql_root_password }}"
 
-- name: Update mysql root password for all root accounts
-  community.mysql.mysql_user:
-    user: root
-    host: "{{ host }}"
-    password: "{{ mysql_root_password }}"
-    login_user: root
-    login_password: "{{ mysql_root_password }}"
-    priv: "*.*:ALL,GRANT"
-
-- name: Removes the MySQL test database
-  community.mysql.mysql_db:
-    db: test
+- name: Remove the MariaDB test database
+  ansible.mysql.mysql_db:
+    config_file: ""
+    login_unix_socket: /run/mysqld/mysqld.sock
+    name: test
     state: absent
-    login_user: root
-    login_password: "{{ mysql_root_password }}"
 
-- name: Creating dvwa DB user
-  community.mysql.mysql_user:
-    user: "{{ dvwa_db_username }}"
+- name: Create the DVWA database
+  ansible.mysql.mysql_db:
+    collation: utf8mb4_unicode_ci
+    config_file: ""
+    encoding: utf8mb4
+    login_unix_socket: /run/mysqld/mysqld.sock
+    name: "{{ dvwa_db_name }}"
     state: present
-    password: "{{ mysql_dvwa_password }}"
+
+- name: Create the restricted DVWA database user
+  ansible.mysql.mysql_user:
+    config_file: ""
     host: localhost
-    login_user: root
-    login_password: "{{ mysql_root_password }}"
-    check_implicit_admin: true
-    priv: "*.*:ALL,GRANT"
-
-- name: Create DVWA database
-  community.mysql.mysql_db:
-    db: dvwa
+    login_unix_socket: /run/mysqld/mysqld.sock
+    name: "{{ dvwa_db_user }}"
+    password: "{{ dvwa_db_password }}"
+    priv:
+      "{{ dvwa_db_name }}.*": ALL
     state: present
-    login_user: "{{ dvwa_db_username }}"
-    login_password: "{{ mysql_dvwa_password }}"
+  no_log: true

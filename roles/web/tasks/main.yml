@@ -1,27 +1,134 @@
 ---
-- name: Download DVWA from github via git clone of the master branch
+- name: Check out the pinned DVWA revision
   ansible.builtin.git:
-    repo: https://github.com/digininja/DVWA.git
-    dest: /var/www/html/DVWA
+    repo: "{{ dvwa_source_repository }}"
+    dest: "{{ dvwa_install_root }}"
     clone: true
     update: true
-    force: true
-    version: master
+    force: false
+    version: "{{ dvwa_source_version }}"
 
-- name: Folder and file permissions for upload
+- name: Make the DVWA upload directory writable by Apache
   ansible.builtin.file:
-    path: "/var/www/html/DVWA/hackable/uploads"
-    mode: 0777
+    path: "{{ dvwa_web_root }}/hackable/uploads"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0755"
     recurse: true
 
-- name: PHP ids file permissions
+- name: Protect the DVWA configuration directory
   ansible.builtin.file:
-    path: "/var/www/html/DVWA/external/phpids/0.6/lib/IDS/tmp"
-    mode: 0777
-    recurse: true
+    path: "{{ dvwa_web_root }}/config"
+    state: directory
+    owner: root
+    group: www-data
+    mode: "0750"
 
-- name: Config directory permissions
-  ansible.builtin.file:
-    path: "/var/www/html/DVWA/config"
-    mode: 0777
-    recurse: true
+- name: Configure the DVWA database connection
+  ansible.builtin.template:
+    src: config.inc.php.j2
+    dest: "{{ dvwa_web_root }}/config/config.inc.php"
+    owner: root
+    group: www-data
+    mode: "0640"
+  diff: false
+  no_log: true
+
+- name: Enable the Apache rewrite module
+  community.general.apache2_module:
+    name: rewrite
+    state: present
+  notify: Restart Apache
+
+- name: Configure the DVWA Apache virtual host
+  ansible.builtin.template:
+    src: 000-default.conf.j2
+    dest: /etc/apache2/sites-available/000-default.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Apache
+
+- name: Apply pending Apache configuration changes
+  ansible.builtin.meta: flush_handlers
+
+- name: Check whether the DVWA database is initialized
+  ansible.mysql.mysql_query:
+    config_file: ""
+    login_unix_socket: /run/mysqld/mysqld.sock
+    query: >-
+      SELECT COUNT(*) AS table_count
+      FROM information_schema.tables
+      WHERE table_schema = %(database_name)s
+      AND table_name = 'users'
+    named_args:
+      database_name: "{{ dvwa_db_name }}"
+  changed_when: false
+  register: web_dvwa_database_status
+  when: not ansible_check_mode
+
+- name: Read the DVWA setup page
+  ansible.builtin.uri:
+    url: http://127.0.0.1/setup.php
+    return_content: true
+    status_code: 200
+  register: web_dvwa_setup_page
+  when:
+    - not ansible_check_mode
+    - web_dvwa_database_status.query_result[0][0].table_count | int == 0
+
+- name: Record the DVWA setup token
+  ansible.builtin.set_fact:
+    web_dvwa_setup_token: >-
+      {{ web_dvwa_setup_page.content
+         | regex_findall("name='user_token' value='([^']+)'")
+         | first }}
+  when:
+    - not ansible_check_mode
+    - web_dvwa_database_status.query_result[0][0].table_count | int == 0
+
+- name: Validate the DVWA setup token
+  ansible.builtin.assert:
+    that: web_dvwa_setup_token | length > 0
+    fail_msg: "Could not extract the CSRF token from the DVWA setup page."
+  when:
+    - not ansible_check_mode
+    - web_dvwa_database_status.query_result[0][0].table_count | int == 0
+
+- name: Initialize the DVWA database
+  ansible.builtin.uri:
+    url: http://127.0.0.1/setup.php
+    method: POST
+    body_format: form-urlencoded
+    body:
+      create_db: Create / Reset Database
+      user_token: "{{ web_dvwa_setup_token }}"
+    headers:
+      Cookie: "{{ web_dvwa_setup_page.cookies_string }}"
+    follow_redirects: all
+    status_code: 200
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - web_dvwa_database_status.query_result[0][0].table_count | int == 0
+
+- name: Verify the initialized database as the DVWA user
+  ansible.mysql.mysql_query:
+    config_file: ""
+    login_host: "{{ dvwa_db_host }}"
+    login_port: "{{ dvwa_db_port }}"
+    login_user: "{{ dvwa_db_user }}"
+    login_password: "{{ dvwa_db_password }}"
+    login_db: "{{ dvwa_db_name }}"
+    query: SELECT COUNT(*) AS user_count FROM users
+  changed_when: false
+  no_log: true
+  register: web_dvwa_database_query
+  when: not ansible_check_mode
+
+- name: Assert that DVWA seeded its users
+  ansible.builtin.assert:
+    that:
+      - web_dvwa_database_query.query_result[0][0].user_count | int > 0
+  when: not ansible_check_mode

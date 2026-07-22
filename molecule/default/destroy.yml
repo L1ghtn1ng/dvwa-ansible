@@ -1,0 +1,44 @@
+---
+- name: Destroy the Ubuntu 24.04 test VM
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+    molecule_disk_path: /var/lib/libvirt/images/dvwa-ubuntu-2404.qcow2
+    molecule_private_key: "{{ molecule_ephemeral_directory }}/id_ed25519"
+    molecule_vm_name: dvwa-ubuntu-2404
+  tasks:
+    - name: List libvirt virtual machines
+      community.libvirt.virt:
+        command: list_vms
+        uri: qemu:///system
+      become: true
+      register: molecule_vms
+
+    - name: Stop the Molecule virtual machine
+      community.libvirt.virt:
+        name: "{{ molecule_vm_name }}"
+        state: destroyed
+        uri: qemu:///system
+      become: true
+      when: molecule_vm_name in molecule_vms.list_vms
+
+    - name: Undefine the Molecule virtual machine
+      community.libvirt.virt:
+        name: "{{ molecule_vm_name }}"
+        command: undefine
+        force: true
+        uri: qemu:///system
+      become: true
+      when: molecule_vm_name in molecule_vms.list_vms
+
+    - name: Remove the Molecule VM disk and SSH keys
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      become: "{{ item == molecule_disk_path }}"
+      loop:
+        - "{{ molecule_disk_path }}"
+        - "{{ molecule_private_key }}"
+        - "{{ molecule_private_key }}.pub"

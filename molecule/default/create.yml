@@ -1,0 +1,120 @@
+---
+- name: Create the Ubuntu 24.04 test VM
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+    molecule_disk_path: /var/lib/libvirt/images/dvwa-ubuntu-2404.qcow2
+    molecule_image_cache: /var/lib/libvirt/images/cloud-images
+    molecule_private_key: "{{ molecule_ephemeral_directory }}/id_ed25519"
+    molecule_vm_name: dvwa-ubuntu-2404
+  tasks:
+    - name: Check for KVM acceleration
+      ansible.builtin.stat:
+        path: /dev/kvm
+      register: molecule_kvm
+
+    - name: Generate an ephemeral SSH key
+      community.crypto.openssh_keypair:
+        path: "{{ molecule_private_key }}"
+        type: ed25519
+        mode: "0600"
+
+    - name: Create the cloud image cache directory
+      ansible.builtin.file:
+        path: "{{ molecule_image_cache }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      become: true
+
+    - name: Provision the libvirt cloud instance
+      community.libvirt.virt_cloud_instance:
+        name: "{{ molecule_vm_name }}"
+        state: present
+        uri: qemu:///system
+        virt_type: "{{ molecule_kvm.stat.exists | ternary('kvm', 'qemu') }}"
+        osinfo:
+          name: ubuntu24.04
+        base_image: https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-amd64.img
+        image_cache_dir: "{{ molecule_image_cache }}"
+        image_checksum: >-
+          sha256:https://cloud-images.ubuntu.com/releases/24.04/release/SHA256SUMS
+        disks:
+          - path: "{{ molecule_disk_path }}"
+            size: 12
+            format: qcow2
+        memory: 2048
+        vcpus: 2
+        networks:
+          - network: default
+        graphics:
+          type: none
+        cloud_init:
+          user_data: |
+            #cloud-config
+            users:
+              - name: ansible
+                groups: sudo
+                shell: /bin/bash
+                sudo: ALL=(ALL) NOPASSWD:ALL
+                ssh_authorized_keys:
+                  - {{ lookup('file', molecule_private_key + '.pub') }}
+            package_update: true
+            packages:
+              - python3
+          meta_data:
+            instance-id: "{{ molecule_vm_name }}"
+            local-hostname: "{{ molecule_vm_name }}"
+        wait_for_cloud_init_reboot: false
+      become: true
+
+    - name: Wait for libvirt to report the VM address
+      ansible.builtin.command:
+        argv:
+          - virsh
+          - --connect
+          - qemu:///system
+          - domifaddr
+          - "{{ molecule_vm_name }}"
+          - --source
+          - lease
+      become: true
+      changed_when: false
+      register: molecule_interfaces
+      retries: 60
+      delay: 5
+      until: molecule_interfaces.stdout is regex('(?:[0-9]{1,3}[.]){3}[0-9]{1,3}/')
+
+    - name: Record the VM address
+      ansible.builtin.set_fact:
+        molecule_vm_address: >-
+          {{ molecule_interfaces.stdout
+             | regex_search('(?:[0-9]{1,3}[.]){3}[0-9]{1,3}(?=/)')
+             | default('', true) }}
+
+    - name: Validate the VM address
+      ansible.builtin.assert:
+        that: molecule_vm_address | length > 0
+        fail_msg: "Could not extract an IPv4 address from virsh domifaddr output."
+
+    - name: Write the Molecule instance configuration
+      ansible.builtin.copy:
+        content: |
+          ---
+          - instance: {{ molecule_vm_name }}
+            address: {{ molecule_vm_address }}
+            user: ansible
+            port: 22
+            identity_file: {{ molecule_private_key }}
+        dest: "{{ molecule_instance_config }}"
+        mode: "0600"
+
+    - name: Wait for SSH to accept connections
+      ansible.builtin.wait_for:
+        host: "{{ molecule_vm_address }}"
+        port: 22
+        delay: 5
+        timeout: 300

@@ -1,12 +1,15 @@
 ---
+# This password is a convenience default for an isolated training lab, not a
+# secret. Override it in inventory or with Ansible Vault when appropriate.
+dvwa_db_password: e31c2425ea43ee9a4456
+dvwa_db_name: dvwa
+dvwa_db_user: dvwa
+dvwa_db_host: 127.0.0.1
+dvwa_db_port: 3306
 
-### Vars for everyone
-mysql_root_password: e31c2425ea43ee9a4455
-mysql_dvwa_password: e31c2425ea43ee9a4456
-dvwa_db_username: dvwa
-
-host:
-  - "127.0.0.1"
-  - "localhost"
-  - "::1"
-  - "{{ ansible_fqdn }}"
+dvwa_source_repository: https://github.com/digininja/DVWA.git
+dvwa_source_version: d45ba3c4e7efa7f023f25f58ab4af9912c887057
+dvwa_install_root: /var/www/html/DVWA
+dvwa_web_root: /var/www/html/DVWA
+dvwa_default_security_level: low
+dvwa_php_version: "8.3"

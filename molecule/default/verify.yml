@@ -1,0 +1,105 @@
+---
+- name: Verify the DVWA deployment
+  hosts: dvwa
+  become: true
+  gather_facts: true
+  vars_files:
+    - "{{ playbook_dir }}/../../group_vars/all.yml"
+  tasks:
+    - name: Assert that the guest is Ubuntu 24.04
+      ansible.builtin.assert:
+        that:
+          - ansible_facts['distribution'] == 'Ubuntu'
+          - ansible_facts['distribution_version'] is version('24.04', '==')
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert that Apache and MariaDB are running
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.services['apache2.service'].state == 'running'
+          - ansible_facts.services['mariadb.service'].state == 'running'
+
+    - name: Validate the Apache configuration
+      ansible.builtin.command: apache2ctl configtest
+      changed_when: false
+
+    - name: Read the installed PHP version
+      ansible.builtin.command:
+        argv:
+          - php
+          - -r
+          - "echo PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;"
+      changed_when: false
+      register: molecule_php_version
+
+    - name: Assert that Ubuntu's PHP 8.3 is installed
+      ansible.builtin.assert:
+        that:
+          - molecule_php_version.stdout == dvwa_php_version
+
+    - name: Read the installed DVWA revision
+      ansible.builtin.command:
+        argv:
+          - git
+          - -C
+          - "{{ dvwa_install_root }}"
+          - rev-parse
+          - HEAD
+      changed_when: false
+      register: molecule_dvwa_revision
+
+    - name: Assert that the pinned DVWA revision is installed
+      ansible.builtin.assert:
+        that:
+          - molecule_dvwa_revision.stdout == dvwa_source_version
+
+    - name: Check DVWA path ownership and permissions
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ dvwa_web_root }}/config/config.inc.php"
+        - "{{ dvwa_web_root }}/hackable/uploads"
+      register: molecule_dvwa_paths
+
+    - name: Assert DVWA path ownership and permissions
+      ansible.builtin.assert:
+        that:
+          - molecule_dvwa_paths.results[0].stat.mode == '0640'
+          - molecule_dvwa_paths.results[0].stat.pw_name == 'root'
+          - molecule_dvwa_paths.results[0].stat.gr_name == 'www-data'
+          - molecule_dvwa_paths.results[1].stat.mode == '0755'
+          - molecule_dvwa_paths.results[1].stat.pw_name == 'www-data'
+
+    - name: Query the DVWA database as the application user
+      ansible.mysql.mysql_query:
+        config_file: ""
+        login_host: "{{ dvwa_db_host }}"
+        login_port: "{{ dvwa_db_port }}"
+        login_user: "{{ dvwa_db_user }}"
+        login_password: "{{ dvwa_db_password }}"
+        login_db: "{{ dvwa_db_name }}"
+        query: SELECT COUNT(*) AS user_count FROM users
+      changed_when: false
+      no_log: true
+      register: molecule_database_query
+
+    - name: Assert that the DVWA database contains seeded users
+      ansible.builtin.assert:
+        that:
+          - molecule_database_query.query_result[0][0].user_count | int > 0
+
+    - name: Request DVWA over HTTP
+      ansible.builtin.uri:
+        url: "http://{{ ansible_host }}/"
+        return_content: true
+        status_code: 200
+      delegate_to: localhost
+      become: false
+      register: molecule_http
+
+    - name: Assert that DVWA served its login page
+      ansible.builtin.assert:
+        that:
+          - "'Damn Vulnerable Web Application' in molecule_http.content"

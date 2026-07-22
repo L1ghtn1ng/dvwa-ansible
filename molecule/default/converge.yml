@@ -1,0 +1,12 @@
+---
+- name: Wait for cloud-init to finish
+  hosts: dvwa
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Wait for cloud-init
+      ansible.builtin.command: cloud-init status --wait
+      changed_when: false
+
+- name: Converge
+  ansible.builtin.import_playbook: ../../main.yml

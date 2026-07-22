@@ -1,0 +1,10 @@
+---
+- name: Clean temporary Molecule files
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Remove the generated instance configuration
+      ansible.builtin.file:
+        path: "{{ molecule_instance_config }}"
+        state: absent

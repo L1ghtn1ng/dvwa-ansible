@@ -1,0 +1,20 @@
+<?php
+
+$DBMS = 'MySQL';
+
+$_DVWA = array();
+$_DVWA[ 'db_server' ] = {{ dvwa_db_host | to_json }};
+$_DVWA[ 'db_database' ] = {{ dvwa_db_name | to_json }};
+$_DVWA[ 'db_user' ] = {{ dvwa_db_user | to_json }};
+$_DVWA[ 'db_password' ] = {{ dvwa_db_password | to_json }};
+$_DVWA[ 'db_port' ] = {{ dvwa_db_port | string | to_json }};
+
+$_DVWA[ 'recaptcha_public_key' ] = '';
+$_DVWA[ 'recaptcha_private_key' ] = '';
+$_DVWA[ 'default_security_level' ] = {{ dvwa_default_security_level | to_json }};
+$_DVWA[ 'default_locale' ] = 'en';
+$_DVWA[ 'disable_authentication' ] = false;
+
+define('MYSQL', 'mysql');
+define('SQLITE', 'sqlite');
+$_DVWA['SQLI_DB'] = MYSQL;

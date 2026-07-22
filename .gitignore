@@ -1,2 +1,6 @@
 main.retry
 .idea/
+.ansible/
+.cache/
+.molecule/
+.venv/

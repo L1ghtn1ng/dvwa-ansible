@@ -1,4 +1,6 @@
 ---
+- name: Install PHP
+  ansible.builtin.import_tasks: phpinstall.yml
 
-- ansible.builtin.include_tasks: phpinstall.yml
-- ansible.builtin.include_tasks: configchange.yml
+- name: Configure PHP
+  ansible.builtin.import_tasks: configchange.yml

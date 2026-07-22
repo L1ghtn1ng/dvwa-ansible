@@ -1,0 +1,13 @@
+<VirtualHost *:80>
+    ServerAdmin webmaster@localhost
+    DocumentRoot {{ dvwa_web_root }}
+
+    <Directory {{ dvwa_web_root }}>
+        AllowOverride All
+        Options Indexes FollowSymLinks
+        Require all granted
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/dvwa-error.log
+    CustomLog ${APACHE_LOG_DIR}/dvwa-access.log combined
+</VirtualHost>

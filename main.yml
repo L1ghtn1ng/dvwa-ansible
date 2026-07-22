@@ -1,12 +1,18 @@
 ---
 - name: Install DVWA
   hosts: dvwa
-  remote_user: ansible
   become: true
-  become_method: sudo
+
+  pre_tasks:
+    - name: Validate the target operating system
+      ansible.builtin.assert:
+        that:
+          - ansible_facts['distribution'] == 'Ubuntu'
+          - ansible_facts['distribution_version'] is version('24.04', '==')
+        fail_msg: "This playbook supports Ubuntu 24.04 LTS only."
 
   roles:
     - common
-    - web
     - db
     - php
+    - web

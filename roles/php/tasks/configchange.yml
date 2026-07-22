@@ -1,17 +1,10 @@
 ---
-- name: Config change for dvwa and replace new config
+- name: Configure PHP for DVWA labs
   ansible.builtin.template:
-    src: templates/config.inc.php.j2
-    dest: /var/www/html/DVWA/config/config.inc.php
-
-- name: PHP configuration change
-  ansible.builtin.template:
-    src: templates/php.ini.j2
-    dest: /etc/php/8.1/apache2/php.ini
-
-- name: Virtualhost configuration change
-  ansible.builtin.template:
-    src: templates/000-default.conf.j2
-    dest: /etc/apache2/sites-available/000-default.conf
+    dest: "/etc/php/{{ dvwa_php_version }}/apache2/conf.d/99-dvwa.ini"
+    group: root
+    mode: "0644"
+    owner: root
+    src: dvwa.ini.j2
   notify:
-    - Restart apache
+    - Restart Apache
