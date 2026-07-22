@@ -113,7 +113,18 @@
     - not ansible_check_mode
     - web_dvwa_database_status.query_result[0][0].table_count | int == 0
 
-- name: Restore the restricted database grant after DVWA setup
+- name: Remove the stale DVWA database user after setup
+  ansible.mysql.mysql_user:
+    config_file: ""
+    host: localhost
+    login_unix_socket: /run/mysqld/mysqld.sock
+    name: "{{ dvwa_db_user }}"
+    state: absent
+  when:
+    - not ansible_check_mode
+    - web_dvwa_database_status.query_result[0][0].table_count | int == 0
+
+- name: Recreate the restricted DVWA database user after setup
   ansible.mysql.mysql_user:
     config_file: ""
     host: localhost
